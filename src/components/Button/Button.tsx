@@ -6,6 +6,7 @@ interface Props {
   subTitle?: string
   color: string
   action: string
+  disabled: boolean
   onPressHandler: (action: string) => void
 }
 
@@ -14,6 +15,7 @@ export const Button = ({
   subTitle,
   color,
   action,
+  disabled,
   onPressHandler,
 }: Props) => {
   const cls = [classes.Button, classes.ButtonText]
@@ -31,11 +33,12 @@ export const Button = ({
     }
   }
   chooseButtonColor(color)
+  if (disabled) cls.push(classes.Disabled)
   return (
     <div
       className={cls.join(" ")}
       onClick={() => {
-        onPressHandler(action)
+        if (!disabled) onPressHandler(action)
       }}
     >
       <span>{title}</span>
