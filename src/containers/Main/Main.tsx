@@ -10,12 +10,18 @@ interface Props {
     fiscal: boolean
     cash: boolean
   }
+  setIdleExchangeScreen: (param: boolean) => void
 }
 
-export const Main = ({ onPressHandler, setDelay, hardwareStatus }: Props) => {
+export const Main = ({ onPressHandler, setDelay, hardwareStatus, setIdleExchangeScreen }: Props) => {
   useEffect(() => {
     setDelay(null)
-  }, [setDelay])
+    setIdleExchangeScreen(false)
+  }, [setDelay, setIdleExchangeScreen])
+  
+  useEffect(() => {
+    if (!hardwareStatus.cash && !hardwareStatus.fiscal) onPressHandler("info")
+  }, [hardwareStatus, onPressHandler])
 
   return (
     <div className={classes.Main}>

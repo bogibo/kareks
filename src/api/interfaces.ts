@@ -68,20 +68,21 @@ export interface RejectPaymentInterface {
   core_payment_state: number
   result: boolean
 }
+export interface CheckData {
+  terminal_id: string
+  timestamp: Date
+  payment_id: string
+  price: number
+}
 export interface CheckResultInterface {
   command: string
   core_payment_state: any
   result: boolean
-  data: {
-    terminal_id: string
-    timestamp: Date
-    payment_id: string
-    price: number
-  }
+  data: CheckData[]
   checksTotal: number
 }
 export interface BaseResultInterface {
   command: string
-	core_payment_state: any
-	result: boolean
+  core_payment_state: any
+  result: boolean
 }
