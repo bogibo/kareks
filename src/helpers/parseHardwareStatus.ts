@@ -2,7 +2,10 @@ import { GetStatusInterface } from "../api/interfaces"
 
 interface ResultInterface {
   fiscal: boolean
-  cash: boolean
+  cash: {
+    cash: boolean
+    hopper: boolean
+  }
 }
 
 export const parseHardwareStatus = (
@@ -10,7 +13,10 @@ export const parseHardwareStatus = (
 ): ResultInterface => {
   const result = {
     fiscal: false,
-    cash: false,
+    cash: {
+      cash: false,
+      hopper: false,
+    },
   }
   if (
     status.fiscal_device_enabled &&
@@ -21,14 +27,18 @@ export const parseHardwareStatus = (
     result.fiscal = true
   if (
     status.cash_code_sm_enabled &&
-    status.cube_hopper_mk_2_enabled &&
     (status.cash_code_sm_status === 1 ||
       status.cash_code_sm_status === 2 ||
-      status.cash_code_sm_status === 3) &&
+      status.cash_code_sm_status === 3)
+  )
+    result.cash.cash = true
+  if (
+    status.cube_hopper_mk_2_enabled &&
     (status.coin_hoppers_status === 1 ||
       status.coin_hoppers_status === 2 ||
       status.coin_hoppers_status === 3)
   )
-    result.cash = true
+    result.cash.hopper = true
+
   return result
 }

@@ -1,28 +1,57 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useContext,
+} from "react"
 import classes from "./PrintScreen.module.sass"
+
+import { store } from "../../context/data/store"
+import {
+  SET_INFO_SCREEN_DATA,
+  SET_DELAY,
+  SET_CURRENT_SCREEN,
+} from "../../context/types"
+
+import { getFiscalizedChecks, printFiscalizedCheck } from "../../api/jsonRpc"
+
 import { Header } from "../../components/Header/Header"
 import { Button } from "../../components/Button/Button"
-import { getFiscalizedChecks, printFiscalizedCheck } from "../../api/jsonRpc"
 import { Info } from "../../components/Info/Info"
 import { CheckData } from "../../api/interfaces"
+import { buttonMap } from "../../helpers/config"
 
 interface Props {
-  onPressHandler: (action: string) => void
-  setDelay: (delay: React.SetStateAction<number | null>) => void
-  fiscalStatus: boolean
+  socket: any
+  updateIdle: () => void
 }
 
-export const PrintScreen = ({
-  onPressHandler,
-  setDelay,
-  fiscalStatus,
-}: Props) => {
+export const PrintScreen = ({ socket, updateIdle }: Props) => {
+  const {
+    state: { hardwareStatus, infoScreenData },
+    dispatch,
+  } = useContext(store)
+
   const [currentPage, setCurrnetPage] = useState(1)
   const [pageContent, setPageContent] = useState<CheckData[]>()
-  const [infoText, setInfoText] = useState("")
-  const [loading, setLoading] = useState(true)
   const [lastPageIndex, setLastPageIndex] = useState(2)
   const cls = [classes.PrintScreen]
+
+  const setInfoScreenData = useCallback(
+    (data: { isLoading: boolean; header: string }) =>
+      dispatch({ type: SET_INFO_SCREEN_DATA, payload: data }),
+    [dispatch]
+  )
+  const setDelay = useCallback(
+    (delay: number | null) => dispatch({ type: SET_DELAY, payload: delay }),
+    [dispatch]
+  )
+  const setCurrentScreen = useCallback(
+    (screen: string) => dispatch({ type: SET_CURRENT_SCREEN, payload: screen }),
+    [dispatch]
+  )
+
   if (currentPage !== 1) cls.push(classes.NextPage)
 
   const wsActionId = useRef<string[] | null>(null)
@@ -33,7 +62,7 @@ export const PrintScreen = ({
         const id = item.payment_id
         return id
       })
-      const expectedLength = currentPage === 1 ? 3 : 5
+      const expectedLength = 5
       if (wsActionId.current.length < expectedLength) {
         const strArr = new Array(expectedLength - wsActionId.current.length)
         strArr.fill("")
@@ -45,44 +74,65 @@ export const PrintScreen = ({
   useEffect(() => {
     setDelay(1000)
   }, [setDelay])
+
   useEffect(() => {
-    if (!fiscalStatus) {
-      setInfoText("Оборудование не готово")
+    if (!hardwareStatus.fiscal) {
+      setInfoScreenData({ isLoading: false, header: "Оборудование не готово" })
+      setTimeout(() => {
+        setCurrentScreen("main")
+      }, 2000)
     }
-  }, [fiscalStatus])
+  }, [hardwareStatus, setInfoScreenData, setCurrentScreen])
+
+  const firstLoad = useRef(true)
 
   useEffect(() => {
     ;(async () => {
+      if (!firstLoad.current) return
+      firstLoad.current = false
       try {
         const { result, data } = await getFiscalizedChecks(0, 3)
         if (result) {
           setPageContent(data)
-          setLoading(false)
+          setInfoScreenData({ isLoading: false, header: "" })
           return
         }
-        setInfoText("Оборудование не готово")
-        setLoading(false)
+        setInfoScreenData({
+          isLoading: false,
+          header: "Оборудование не готово",
+        })
+        setTimeout(() => {
+          setCurrentScreen("main")
+        }, 2000)
       } catch (error) {
-        setInfoText("Оборудование не готово")
-        setLoading(false)
         console.log(error)
+        setInfoScreenData({
+          isLoading: false,
+          header: "Оборудование не готово",
+        })
+        setTimeout(() => {
+          setCurrentScreen("main")
+        }, 2000)
       }
     })()
-  }, [])
+  }, [setCurrentScreen, setInfoScreenData])
 
-  const nextPageHandler = async () => {
-    const currentPageIndex = lastPageIndex
-    setLoading(true)
-    setLastPageIndex((lastIndex) =>
-      currentPage === 1 ? lastIndex + 3 : lastIndex + 5
+  const nextPageHandler = useCallback(async () => {
+    updateIdle()
+    if (
+      (pageContent && pageContent.length < 5 && currentPage !== 1) ||
+      !pageContent
     )
+      return
+    const currentPageIndex = lastPageIndex
+    setInfoScreenData({ isLoading: true, header: "" })
+    setLastPageIndex((lastIndex) => lastIndex + 5)
     try {
       const { result, data } = await getFiscalizedChecks(
         currentPageIndex + 1,
         5
       )
-      console.log("data: ", data)
-      setLoading(false)
+      setInfoScreenData({ isLoading: false, header: "" })
       if (!result) {
         setPageContent([])
         setCurrnetPage((page) => page + 1)
@@ -91,16 +141,17 @@ export const PrintScreen = ({
       setPageContent(data)
       setCurrnetPage((page) => page + 1)
     } catch (error) {
-      setLoading(false)
+      setInfoScreenData({ isLoading: false, header: "" })
       console.log(error)
     }
-  }
+  }, [currentPage, lastPageIndex, pageContent, setInfoScreenData, updateIdle])
 
-  const prevPageHandler = async () => {
+  const prevPageHandler = useCallback(async () => {
+    updateIdle()
     if (currentPage === 1) return
     const currentPageIndex = lastPageIndex
     const page = currentPage
-    setLoading(true)
+    setInfoScreenData({ isLoading: true, header: "" })
     if (page - 1 === 1) {
       setLastPageIndex(2)
     } else {
@@ -108,10 +159,10 @@ export const PrintScreen = ({
     }
     try {
       const { result, data } = await getFiscalizedChecks(
-        currentPage === 1 ? 0 : currentPageIndex - 5,
+        page - 1 === 1 ? 0 : currentPageIndex - 9,
         page - 1 === 1 ? 3 : 5
       )
-      setLoading(false)
+      setInfoScreenData({ isLoading: false, header: "" })
       if (!result) {
         setPageContent([])
         setCurrnetPage((page) => page - 1)
@@ -120,35 +171,98 @@ export const PrintScreen = ({
       setPageContent(data)
       setCurrnetPage((page) => page - 1)
     } catch (error) {
-      setLoading(false)
+      setInfoScreenData({ isLoading: false, header: "" })
       console.log(error)
     }
-  }
-  const PrintCheckHandler = async (checkId: string) => {
-    if (!checkId) return
-    setLoading(true)
-    // setInfoText("Идет печать")
-    setDelay(null)
-    try {
-      const { result } = await printFiscalizedCheck(checkId)
-      if (result) {
-        setInfoText("Готово")
-      } else {
-        setInfoText("Что то пошло не так")
+  }, [currentPage, lastPageIndex, setInfoScreenData, updateIdle])
+
+  const PrintCheckHandler = useCallback(
+    async (checkId: string) => {
+      updateIdle()
+      if (!checkId) return
+      setInfoScreenData({ isLoading: true, header: "" })
+      setDelay(null)
+      try {
+        const { result } = await printFiscalizedCheck(checkId)
+        if (result) {
+          setInfoScreenData({ isLoading: false, header: "Готово" })
+        } else {
+          setInfoScreenData({ isLoading: false, header: "Что то пошло не так" })
+        }
+        setTimeout(() => {
+          setCurrentScreen("main")
+        }, 2000)
+      } catch (error) {
+        setInfoScreenData({ isLoading: false, header: "Что то пошло не так" })
+        console.log(error)
+        setTimeout(() => {
+          setCurrentScreen("main")
+        }, 2000)
       }
-      setLoading(false)
-      setTimeout(() => {
-        onPressHandler("main")
-      }, 2000)
-    } catch (error) {
-      setLoading(false)
-      setInfoText("Что то пошло не так")
-      console.log(error)
-      setTimeout(() => {
-        onPressHandler("main")
-      }, 2000)
+    },
+    [setCurrentScreen, setInfoScreenData, setDelay, updateIdle]
+  )
+
+  useEffect(() => {
+    if (!hardwareStatus.fiscal) return
+    if (!socket.current) return
+    socket.current.onmessage = async (msg) => {
+      const action = JSON.parse(msg.data)
+      if (action.event === "idle") return
+      let index
+      let paymentId
+      switch (action.button) {
+        case "L03":
+          setCurrentScreen("main")
+          break
+        case "R02":
+          await nextPageHandler()
+          break
+        case "R03":
+          await prevPageHandler()
+          break
+        case "L00":
+          index = buttonMap.indexOf("L00")
+          if (index < 0 || !wsActionId.current) return
+          paymentId = wsActionId.current[index]
+          await PrintCheckHandler(paymentId)
+          break
+        case "L01":
+          index = buttonMap.indexOf("L01")
+          if (index < 0 || !wsActionId.current) return
+          paymentId = wsActionId.current[index]
+          await PrintCheckHandler(paymentId)
+          break
+        case "L02":
+          index = buttonMap.indexOf("L02")
+          if (index < 0 || !wsActionId.current) return
+          paymentId = wsActionId.current[index]
+          await PrintCheckHandler(paymentId)
+          break
+        case "R00":
+          index = buttonMap.indexOf("R00")
+          if (index < 0 || !wsActionId.current) return
+          paymentId = wsActionId.current[index]
+          await PrintCheckHandler(paymentId)
+          break
+        case "R01":
+          index = buttonMap.indexOf("R01")
+          if (index < 0 || !wsActionId.current) return
+          paymentId = wsActionId.current[index]
+          await PrintCheckHandler(paymentId)
+          break
+      }
     }
-  }
+  }, [
+    socket,
+    hardwareStatus,
+    nextPageHandler,
+    prevPageHandler,
+    PrintCheckHandler,
+    updateIdle,
+    setCurrentScreen,
+  ])
+
   const showDiv = () => {
     if (pageContent && pageContent.length === 0) return true
     if (currentPage === 1 && pageContent) {
@@ -163,22 +277,22 @@ export const PrintScreen = ({
   return (
     <div className={cls.join(" ")}>
       {currentPage === 1 && <Header title="Печать чеков" />}
-      {(loading || infoText.length > 0) && (
+      {(infoScreenData.isLoading || infoScreenData.header.length > 0) && (
         <Info
-          isLoading={loading}
-          header={infoText}
+          isLoading={infoScreenData.isLoading}
+          header={infoScreenData.header}
           small={true}
-          button={!fiscalStatus}
-          onPressHandler={onPressHandler}
+          button={!hardwareStatus.fiscal}
+          onPressHandler={setCurrentScreen}
         />
       )}
-      {!loading && pageContent && !infoText && (
+      {!infoScreenData.isLoading && pageContent && !infoScreenData.header && (
         <div className={classes.Grid}>
           {showDiv() && <div></div>}
           {pageContent.length > 0 &&
             pageContent.map((item) => (
               <Button
-                title={new Date(item.timestamp).toLocaleTimeString()}
+                title={new Date(item.timestamp).toLocaleTimeString("ru-RU")}
                 subTitle={(item.price / 100).toString() + " руб"}
                 paymentId={item.payment_id}
                 color="white"
@@ -202,7 +316,7 @@ export const PrintScreen = ({
             color="red"
             action="main"
             disabled={false}
-            onPressHandler={onPressHandler}
+            onPressHandler={setCurrentScreen}
           />
           <Button
             title="Листать назад"
