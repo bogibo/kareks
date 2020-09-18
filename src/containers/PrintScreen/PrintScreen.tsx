@@ -85,21 +85,23 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
   }, [hardwareStatus, setInfoScreenData, setCurrentScreen])
 
   const firstLoad = useRef(true)
+  const checksTotal = useRef(0)
 
   useEffect(() => {
     ;(async () => {
       if (!firstLoad.current) return
       firstLoad.current = false
       try {
-        const { result, data } = await getFiscalizedChecks(0, 3)
+        const { result, checks_total, data } = await getFiscalizedChecks(0, 3)
         if (result) {
+          checksTotal.current = checks_total
           setPageContent(data)
           setInfoScreenData({ isLoading: false, header: "" })
           return
         }
         setInfoScreenData({
           isLoading: false,
-          header: "Оборудование не готово",
+          header: "Не могу получить список чеков",
         })
         setTimeout(() => {
           setCurrentScreen("main")
@@ -134,14 +136,24 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
       )
       setInfoScreenData({ isLoading: false, header: "" })
       if (!result) {
+        setInfoScreenData({
+          isLoading: false,
+          header: "Не могу получить список чеков",
+        })
         setPageContent([])
         setCurrnetPage((page) => page + 1)
+        setTimeout(() => {
+          setInfoScreenData({ isLoading: false, header: "" })
+        }, 2000)
         return
       }
       setPageContent(data)
       setCurrnetPage((page) => page + 1)
     } catch (error) {
-      setInfoScreenData({ isLoading: false, header: "" })
+      setInfoScreenData({ isLoading: false, header: "Что то пошло не так" })
+      setTimeout(() => {
+        setInfoScreenData({ isLoading: false, header: "" })
+      }, 2000)
       console.log(error)
     }
   }, [currentPage, lastPageIndex, pageContent, setInfoScreenData, updateIdle])
@@ -164,14 +176,24 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
       )
       setInfoScreenData({ isLoading: false, header: "" })
       if (!result) {
+        setInfoScreenData({
+          isLoading: false,
+          header: "Не могу получить список чеков",
+        })
         setPageContent([])
         setCurrnetPage((page) => page - 1)
+        setTimeout(() => {
+          setInfoScreenData({ isLoading: false, header: "" })
+        }, 2000)
         return
       }
       setPageContent(data)
       setCurrnetPage((page) => page - 1)
     } catch (error) {
-      setInfoScreenData({ isLoading: false, header: "" })
+      setInfoScreenData({ isLoading: false, header: "Что то пошло не так" })
+      setTimeout(() => {
+        setInfoScreenData({ isLoading: false, header: "" })
+      }, 2000)
       console.log(error)
     }
   }, [currentPage, lastPageIndex, setInfoScreenData, updateIdle])
@@ -292,7 +314,11 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
           {pageContent.length > 0 &&
             pageContent.map((item) => (
               <Button
-                title={new Date(item.timestamp).toLocaleTimeString("ru-RU")}
+                title={
+                  (item.terminal_title.length > 0
+                    ? `${item.terminal_title} - `
+                    : "") + new Date(item.timestamp).toLocaleTimeString("ru-RU")
+                }
                 subTitle={(item.price / 100).toString() + " руб"}
                 paymentId={item.payment_id}
                 color="white"
@@ -307,7 +333,7 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
             color="blue"
             action="main"
             disabled={
-              currentPage !== 1 && pageContent.length < 5 ? true : false
+              (currentPage - 1) * 5 + 3 > checksTotal.current ? true : false
             }
             onPressHandler={nextPageHandler}
           />

@@ -70,11 +70,13 @@ export interface RejectPaymentInterface {
 }
 export interface CheckData {
   terminal_id: string
+  terminal_title: string
   timestamp: Date
   payment_id: string
   price: number
 }
 export interface CheckResultInterface {
+  checks_total: number
   command: string
   core_payment_state: any
   result: boolean

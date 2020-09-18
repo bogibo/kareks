@@ -119,6 +119,7 @@ export const getFiscalizedChecks = (
         method: "get_fiscalized_checks",
         params: [startIndex, quantity],
       })
+      console.log("get_fiscalized_checks: ", response)
       resolve(response)
     } catch (error) {
       reject(error)
