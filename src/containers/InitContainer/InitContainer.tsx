@@ -117,7 +117,7 @@ export const InitContainer = () => {
       } else {
         setInfoScreenData({
           isLoading: false,
-          header: "Терминал времмено не работает",
+          header: "Терминал временно не работает",
         })
       }
     } catch (error) {
@@ -126,7 +126,7 @@ export const InitContainer = () => {
       } else {
         setInfoScreenData({
           isLoading: false,
-          header: "Терминал времмено не работает",
+          header: "Терминал временно не работает",
         })
       }
       console.error(error)
