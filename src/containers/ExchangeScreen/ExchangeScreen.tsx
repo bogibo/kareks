@@ -210,7 +210,7 @@ export const ExchangeScreen = ({ socket, updateIdle }: Props) => {
     ;(async () => {
       if (idleExchangeScreen && amount === 0 && flag.current) {
         flag.current = false
-        goBackHandler()
+        await goBackHandler()
       }
     })()
   }, [idleExchangeScreen, amount, goBackHandler])
@@ -223,10 +223,10 @@ export const ExchangeScreen = ({ socket, updateIdle }: Props) => {
       updateIdle()
       switch (action.button) {
         case "L03":
-          goBackHandler()
+          await goBackHandler()
           break
         case "R03":
-          exchangeHandler()
+          await exchangeHandler()
           break
       }
     }

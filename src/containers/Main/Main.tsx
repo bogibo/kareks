@@ -86,8 +86,6 @@ export const Main = ({ socket, updateIdle }: Props) => {
           action="exchange"
           disabled={
             !hardwareStatus.cash.cash || !hardwareStatus.cash.hopper
-              ? true
-              : false
           }
           onPressHandler={setCurrentScreen}
         />

@@ -12,10 +12,10 @@ import {
   SET_IDLE_EXCHANGE_SCREEN,
 } from "../../context/types"
 
-import { Main } from "../../containers/Main/Main"
-import { ExchangeScreen } from "../../containers/ExchangeScreen/ExchangeScreen"
-import { PrintScreen } from "../../containers/PrintScreen/PrintScreen"
-import { InfoScreen } from "../../containers/InfoScreen/InfoScreen"
+import { Main } from "../Main/Main"
+import { ExchangeScreen } from "../ExchangeScreen/ExchangeScreen"
+import { PrintScreen } from "../PrintScreen/PrintScreen"
+import { InfoScreen } from "../InfoScreen/InfoScreen"
 
 import { getStatus, resetPayment } from "../../api/jsonRpc"
 import { parseHardwareStatus } from "../../helpers/parseHardwareStatus"

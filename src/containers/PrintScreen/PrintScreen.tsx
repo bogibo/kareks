@@ -1,26 +1,16 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useContext,
-} from "react"
+import React, {useCallback, useContext, useEffect, useRef, useState,} from "react"
 import classes from "./PrintScreen.module.sass"
 
-import { store } from "../../context/data/store"
-import {
-  SET_INFO_SCREEN_DATA,
-  SET_DELAY,
-  SET_CURRENT_SCREEN,
-} from "../../context/types"
+import {store} from "../../context/data/store"
+import {SET_CURRENT_SCREEN, SET_DELAY, SET_INFO_SCREEN_DATA,} from "../../context/types"
 
-import { getFiscalizedChecks, printFiscalizedCheck } from "../../api/jsonRpc"
+import {getFiscalizedChecks, printFiscalizedCheck} from "../../api/jsonRpc"
 
-import { Header } from "../../components/Header/Header"
-import { Button } from "../../components/Button/Button"
-import { Info } from "../../components/Info/Info"
-import { CheckData } from "../../api/interfaces"
-import { buttonMap } from "../../helpers/config"
+import {Header} from "../../components/Header/Header"
+import {Button} from "../../components/Button/Button"
+import {Info} from "../../components/Info/Info"
+import {CheckData} from "../../api/interfaces"
+import {buttonMap} from "../../helpers/config"
 
 interface Props {
   socket: any
@@ -33,7 +23,7 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
     dispatch,
   } = useContext(store)
 
-  const [currentPage, setCurrnetPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(1)
   const [pageContent, setPageContent] = useState<CheckData[]>()
   const [lastPageIndex, setLastPageIndex] = useState(2)
   const cls = [classes.PrintScreen]
@@ -59,8 +49,7 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
     ;(() => {
       if (!pageContent) return (wsActionId.current = null)
       wsActionId.current = pageContent.map((item) => {
-        const id = item.payment_id
-        return id
+        return item.payment_id
       })
       const expectedLength = 5
       if (wsActionId.current.length < expectedLength) {
@@ -141,14 +130,14 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
           header: "Не могу получить список чеков",
         })
         setPageContent([])
-        setCurrnetPage((page) => page + 1)
+        setCurrentPage((page) => page + 1)
         setTimeout(() => {
           setInfoScreenData({ isLoading: false, header: "" })
         }, 2000)
         return
       }
       setPageContent(data)
-      setCurrnetPage((page) => page + 1)
+      setCurrentPage((page) => page + 1)
     } catch (error) {
       setInfoScreenData({ isLoading: false, header: "Что то пошло не так" })
       setTimeout(() => {
@@ -181,14 +170,14 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
           header: "Не могу получить список чеков",
         })
         setPageContent([])
-        setCurrnetPage((page) => page - 1)
+        setCurrentPage((page) => page - 1)
         setTimeout(() => {
           setInfoScreenData({ isLoading: false, header: "" })
         }, 2000)
         return
       }
       setPageContent(data)
-      setCurrnetPage((page) => page - 1)
+      setCurrentPage((page) => page - 1)
     } catch (error) {
       setInfoScreenData({ isLoading: false, header: "Что то пошло не так" })
       setTimeout(() => {
@@ -288,12 +277,11 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
   const showDiv = () => {
     if (pageContent && pageContent.length === 0) return true
     if (currentPage === 1 && pageContent) {
-      if (pageContent.length < 3 && !(pageContent.length % 2)) return true
-      return false
+      return pageContent.length < 3 && !(pageContent.length % 2);
+
     }
-    if (pageContent && pageContent.length < 5 && !(pageContent.length % 2))
-      return true
-    return false
+    return !!(pageContent && pageContent.length < 5 && !(pageContent.length % 2));
+
   }
 
   return (
@@ -333,7 +321,7 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
             color="blue"
             action="main"
             disabled={
-              (currentPage - 1) * 5 + 3 > checksTotal.current ? true : false
+              (currentPage - 1) * 5 + 3 > checksTotal.current
             }
             onPressHandler={nextPageHandler}
           />
@@ -348,7 +336,7 @@ export const PrintScreen = ({ socket, updateIdle }: Props) => {
             title="Листать назад"
             color="blue"
             action="main"
-            disabled={currentPage === 1 ? true : false}
+            disabled={currentPage === 1}
             onPressHandler={prevPageHandler}
           />
         </div>
